@@ -19,7 +19,7 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 
-import urllib
+import urllib2
 from jsonrpc.json import dumps, loads
 
 class JSONRPCException(Exception):
@@ -37,9 +37,12 @@ class ServiceProxy(object):
             name = "%s.%s" % (self.__serviceName, name)
         return ServiceProxy(self.__serviceURL, name)
 
-    def __call__(self, *args):
+    def __call__(self, *args, **headers):
          postdata = dumps({"method": self.__serviceName, 'params': args, 'id':'jsonrpc'})
-         respdata = urllib.urlopen(self.__serviceURL, postdata).read()
+         postdata = postdata.encode('utf-8')
+         # set postdata for request and headers from kwargs
+         req = urllib2.Request(self.__serviceURL, postdata, headers)
+         respdata = urllib2.urlopen(req).read()
          resp = loads(respdata)
          if resp['error'] != None:
              raise JSONRPCException(resp['error'])
