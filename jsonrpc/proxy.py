@@ -24,29 +24,36 @@ from jsonrpc.json import dumps, loads
 
 class JSONRPCException(Exception):
     def __init__(self, rpcError):
-        Exception.__init__(self)
+        super(Exception, self).__init__(self)
         self.error = rpcError
-        
+
 class ServiceProxy(object):
-    def __init__(self, serviceURL, serviceName=None):
+    def __init__(self, serviceURL, serviceName=None, serviceVersion="2.0"):
         self.__serviceURL = serviceURL
         self.__serviceName = serviceName
+        self.__serviceVersion = serviceVersion
 
     def __getattr__(self, name):
         if self.__serviceName != None:
             name = "%s.%s" % (self.__serviceName, name)
         return ServiceProxy(self.__serviceURL, name)
 
-    def __call__(self, *args, **headers):
-         postdata = dumps({"method": self.__serviceName, 'params': args, 'id':'jsonrpc'})
-         postdata = postdata.encode('utf-8')
-         # set postdata for request and headers from kwargs
-         req = urllib2.Request(self.__serviceURL, postdata, headers)
-         respdata = urllib2.urlopen(req).read()
-         resp = loads(respdata)
-         if resp['error'] != None:
-             raise JSONRPCException(resp['error'])
-         else:
-             return resp['result']
-         
-
+    def __call__(self, *args, **kwargs):
+        headers = kwargs.pop('headers', {})
+        params = kwargs if len(kwargs) else args
+        postdata = dumps({
+            'jsonrpc': self.__serviceVersion,
+            "method": self.__serviceName,
+            'params': params,
+            'id':'jsonrpc'})
+        postdata = postdata.encode('utf-8')
+        req = urllib2.Request(self.__serviceURL, postdata, headers)
+        try:
+            respdata = urllib2.urlopen(req).read()
+        except urllib2.HTTPError as err:
+            respdata = err.read()
+        resp = loads(respdata)
+        if resp['error'] != None:
+            raise JSONRPCException(resp['error'])
+        else:
+            return resp['result']
