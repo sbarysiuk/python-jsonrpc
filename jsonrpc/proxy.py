@@ -46,7 +46,6 @@ class ServiceProxy(object):
             "method": self.__serviceName,
             'params': params,
             'id':'jsonrpc'})
-        print postdata
         postdata = postdata.encode('utf-8')
         req = urllib2.Request(self.__serviceURL, postdata, headers)
         try:
