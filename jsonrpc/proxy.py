@@ -22,6 +22,8 @@
 import urllib2
 from jsonrpc.json import dumps, loads
 
+DEFAULT_URLLIB2_TIMEOUT = 20
+
 class JSONRPCException(Exception):
     def __init__(self, rpcError):
         super(Exception, self).__init__(self)
@@ -40,6 +42,7 @@ class ServiceProxy(object):
 
     def __call__(self, *args, **kwargs):
         headers = kwargs.pop('headers', {})
+        timeout = kwargs.pop('timeout', DEFAULT_URLLIB2_TIMEOUT)
         params = kwargs if len(kwargs) else args
         postdata = dumps({
             'jsonrpc': self.__serviceVersion,
@@ -49,7 +52,7 @@ class ServiceProxy(object):
         postdata = postdata.encode('utf-8')
         req = urllib2.Request(self.__serviceURL, postdata, headers)
         try:
-            respdata = urllib2.urlopen(req).read()
+            respdata = urllib2.urlopen(req, timeout=timeout).read()
         except urllib2.HTTPError as err:
             respdata = err.read()
         resp = loads(respdata)
