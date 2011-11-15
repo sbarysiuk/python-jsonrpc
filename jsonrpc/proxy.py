@@ -54,7 +54,11 @@ class ServiceProxy(object):
         try:
             respdata = urllib2.urlopen(req, timeout=timeout).read()
         except urllib2.HTTPError as err:
+            # try read content
             respdata = err.read()
+        except urllib2.URLError as err:
+            # return the reason of error
+            raise Exception(err.reason[-1])
         resp = loads(respdata)
         if resp['error'] != None:
             raise JSONRPCException(resp['error'])
